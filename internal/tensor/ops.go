@@ -181,3 +181,27 @@ func LayerNormFwd(y, xh, rstd, x, g, b []float32, rows, d int) {
 		}
 	})
 }
+
+// LayerNormBwd accumulates gradients: dx += ∂L/∂x, dg += ∂L/∂g, db += ∂L/∂b.
+func LayerNormBwd(dx, dg, db, dy, xh, rstd, g []float32, rows, d int) {
+	dxh := make([]float32, d)
+	for r := 0; r < rows; r++ {
+		dyr := dy[r*d : (r+1)*d]
+		xr := xh[r*d : (r+1)*d]
+		var m1, m2 float32
+		for i := 0; i < d; i++ {
+			dxh[i] = dyr[i] * g[i]
+			m1 += dxh[i]
+			m2 += dxh[i] * xr[i]
+			dg[i] += dyr[i] * xr[i]
+			db[i] += dyr[i]
+		}
+		m1 /= float32(d)
+		m2 /= float32(d)
+		rs := rstd[r]
+		out := dx[r*d : (r+1)*d]
+		for i := 0; i < d; i++ {
+			out[i] += rs * (dxh[i] - m1 - xr[i]*m2)
+		}
+	}
+}
