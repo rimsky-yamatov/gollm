@@ -34,3 +34,16 @@ go test ./...
 ノックス> おやすみなさい。ゆっくり休んでくださいね。
 ```
 
+## 構成
+
+| パス | 内容 |
+| --- | --- |
+| `cmd/gollm` | CLI(chat / gen / train / info) |
+| `internal/tensor` | 行列演算・LayerNorm・GELU |
+| `internal/model` | 設定・重みの入出力・KVキャッシュ推論 |
+| `internal/train` | コーパス処理・forward/backward・AdamW |
+| `internal/chat`, `internal/sample` | 対話ループ・サンプリング |
+| `tools/` | コーパス生成器と numpy 参照実装 |
+| `data/corpus/` | 学習コーパス(60シャード) |
+| `testdata/golden.json` | numpy 実装との照合データ |
+
