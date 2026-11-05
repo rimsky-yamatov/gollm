@@ -21,3 +21,12 @@ type Vocab struct {
 	Tokens []string
 	index  map[string]int
 }
+
+// New builds a Vocab from an explicit token list.
+func New(tokens []string) *Vocab {
+	v := &Vocab{Tokens: tokens, index: make(map[string]int, len(tokens))}
+	for i, t := range tokens {
+		v.index[t] = i
+	}
+	return v
+}
