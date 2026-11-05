@@ -29,3 +29,13 @@ type Options struct {
 	Log       io.Writer
 	Arch      model.Config // Vocab is filled in from the corpus
 }
+
+// DefaultOptions mirrors tools/train_numpy.py.
+func DefaultOptions() Options {
+	return Options{
+		DataDir: "data/corpus", OutModel: "model/gollm.bin", OutVocab: "model/vocab.json",
+		Steps: 4000, Batch: 16, LR: 3e-3, Warmup: 100, Seed: 1234,
+		SaveEvery: 200, LogEvery: 20, Log: os.Stdout,
+		Arch: model.Default(0),
+	}
+}
