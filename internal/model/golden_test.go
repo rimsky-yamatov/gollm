@@ -74,3 +74,27 @@ func TestMatchesReference(t *testing.T) {
 		t.Errorf("argmax = %d, want %d", best, g.LastArgmax)
 	}
 }
+
+func TestSaveLoadRoundTrip(t *testing.T) {
+	cfg := Config{Vocab: 9, Dim: 8, Layers: 2, Heads: 2, FF: 16, Ctx: 5}
+	w := New(cfg, newRand(3))
+	path := filepath.Join(t.TempDir(), "w.bin")
+	if err := Save(path, w); err != nil {
+		t.Fatal(err)
+	}
+	w2, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w2.Cfg != cfg {
+		t.Fatalf("cfg = %+v", w2.Cfg)
+	}
+	a, b := w.Params(), w2.Params()
+	for i := range a {
+		for j := range a[i].Data {
+			if a[i].Data[j] != b[i].Data[j] {
+				t.Fatalf("%s[%d] differs", a[i].Name, j)
+			}
+		}
+	}
+}
