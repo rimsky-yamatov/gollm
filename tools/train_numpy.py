@@ -235,3 +235,66 @@ def generate(p, vocab, history, user, temp=0.0, topk=1, maxlen=120, rng=None):
             break
         out += vocab[nxt]
     return out
+
+
+# ---------------- commands ----------------
+def cmd_train(steps):
+    convs = load_convs()
+    vocab = build_vocab(convs)
+    c2i = {c: i for i, c in enumerate(vocab)}
+    json.dump(vocab, open(VOCAB, "w", encoding="utf-8"), ensure_ascii=False)
+    ids, mask, starts = build_stream(convs, c2i)
+    V = len(vocab)
+    print(f"convs={len(convs)} tokens={len(ids)} V={V}", flush=True)
+    rng = np.random.default_rng(1234)
+    ck = os.path.join(ROOT, "tools", "ckpt.npz")
+    if os.path.exists(ck):
+        z = np.load(ck)
+        p = {k: z["p_" + k] for k in param_order()}
+        m = {k: z["m_" + k] for k in param_order()}
+        v = {k: z["v_" + k] for k in param_order()}
+        step0 = int(z["step"])
+        print("resume from", step0)
+    else:
+        p = init_params(V, rng)
+        m = {k: np.zeros_like(a) for k, a in p.items()}
+        v = {k: np.zeros_like(a) for k, a in p.items()}
+        step0 = 0
+    B, lr_max, warm = 16, 3e-3, 100
+    b1, b2, eps, wd = 0.9, 0.99, 1e-8, 0.01
+    t0 = time.time()
+    ema = None
+    for step in range(step0, steps):
+        lr = lr_max * min(1.0, (step + 1) / warm) * (0.05 + 0.95 * 0.5 * (1 + math.cos(math.pi * step / steps)))
+        bi = rng.choice(starts, B)
+        X = np.stack([np.resize(ids[s:s + T + 1], T + 1) if s + T + 1 > len(ids) else ids[s:s + T + 1] for s in bi])
+        Wm = np.stack([np.resize(mask[s:s + T + 1], T + 1) if s + T + 1 > len(ids) else mask[s:s + T + 1] for s in bi])
+        loss, gr = loss_and_grads(p, X[:, :T], X[:, 1:].astype(np.int64), Wm[:, 1:])
+        gn = math.sqrt(sum(float((g * g).sum()) for g in gr.values()))
+        sc = min(1.0, 1.0 / (gn + 1e-6))
+        for k in p:
+            g = gr[k] * sc
+            m[k] = b1 * m[k] + (1 - b1) * g
+            v[k] = b2 * v[k] + (1 - b2) * g * g
+            mh = m[k] / (1 - b1 ** (step + 1)); vh = v[k] / (1 - b2 ** (step + 1))
+            upd = mh / (np.sqrt(vh) + eps)
+            if p[k].ndim == 2 and k not in ("E", "P"):
+                upd = upd + wd * p[k]
+            p[k] -= lr * upd
+        ema = loss if ema is None else 0.98 * ema + 0.02 * loss
+        if step % 20 == 0:
+            print(f"step {step} loss {loss:.4f} ema {ema:.4f} lr {lr:.5f} {time.time()-t0:.0f}s", flush=True)
+        if (step + 1) % 200 == 0 or step + 1 == steps:
+            save_bin(p, V)
+            np.savez(ck, step=step + 1, **{"p_" + k: p[k] for k in p}, **{"m_" + k: m[k] for k in p}, **{"v_" + k: v[k] for k in p})
+    save_bin(p, V)
+    print("done", flush=True)
+
+
+def build_history(turns, user, c2i, ctx=T, reserve=70):
+    """Go の chat.BuildPrompt と同じ: 古いターンから捨てて返信分の余白を確保する。"""
+    budget = ctx - reserve
+    for start in range(len(turns) + 1):
+        h = "".join("ユーザー: " + u + "\n" + BOT + b + "\n" for u, b in turns[start:])
+        if start >= len(turns) or len(encode(h + "ユーザー: " + user + "\n" + BOT, c2i)) <= budget:
+            return h
