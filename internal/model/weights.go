@@ -91,3 +91,21 @@ func New(cfg Config, rng *rand.Rand) *Weights {
 	}
 	return w
 }
+
+// Params lists all tensors in the on-disk order.
+func (w *Weights) Params() []Param {
+	ps := []Param{{"E", w.E, false}, {"P", w.P, false}}
+	for i := range w.L {
+		l := &w.L[i]
+		p := fmt.Sprintf("%d.", i)
+		ps = append(ps,
+			Param{p + "ln1g", l.Ln1G, false}, Param{p + "ln1b", l.Ln1B, false},
+			Param{p + "Wq", l.Wq, true}, Param{p + "Wk", l.Wk, true},
+			Param{p + "Wv", l.Wv, true}, Param{p + "Wo", l.Wo, true},
+			Param{p + "ln2g", l.Ln2G, false}, Param{p + "ln2b", l.Ln2B, false},
+			Param{p + "W1", l.W1, true}, Param{p + "b1", l.B1, false},
+			Param{p + "W2", l.W2, true}, Param{p + "b2", l.B2, false},
+		)
+	}
+	return append(ps, Param{"lnfg", w.LnfG, false}, Param{"lnfb", w.LnfB, false})
+}
