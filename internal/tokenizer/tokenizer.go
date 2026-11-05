@@ -87,3 +87,12 @@ func (v *Vocab) Token(id int) string {
 	}
 	return v.Tokens[id]
 }
+
+// Save writes the vocabulary as a JSON array of strings.
+func (v *Vocab) Save(path string) error {
+	b, err := json.Marshal(v.Tokens)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o644)
+}
