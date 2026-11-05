@@ -79,3 +79,11 @@ func (v *Vocab) Decode(ids []int) string {
 	}
 	return string(b)
 }
+
+// Token returns the string for one id.
+func (v *Vocab) Token(id int) string {
+	if id < 0 || id >= len(v.Tokens) {
+		return ""
+	}
+	return v.Tokens[id]
+}
