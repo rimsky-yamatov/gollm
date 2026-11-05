@@ -77,3 +77,12 @@ func TestLayerNormZeroMeanUnitVar(t *testing.T) {
 		t.Fatalf("mean = %v", mean/4)
 	}
 }
+
+func TestGeluKnownValues(t *testing.T) {
+	in := []float32{0, 1, -1}
+	out := make([]float32, 3)
+	GeluFwd(out, nil, in)
+	if !approx(out[0], 0, 1e-6) || !approx(out[1], 0.8412, 1e-3) || !approx(out[2], -0.1588, 1e-3) {
+		t.Fatalf("gelu = %v", out)
+	}
+}
