@@ -15,3 +15,6 @@ const (
 	// replyReserve is the number of context tokens kept free for the reply.
 	replyReserve = 70
 )
+
+// Turn is one user/assistant exchange.
+type Turn struct{ User, Bot string }
