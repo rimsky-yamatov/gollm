@@ -298,3 +298,37 @@ def build_history(turns, user, c2i, ctx=T, reserve=70):
         h = "".join("ユーザー: " + u + "\n" + BOT + b + "\n" for u, b in turns[start:])
         if start >= len(turns) or len(encode(h + "ユーザー: " + user + "\n" + BOT, c2i)) <= budget:
             return h
+
+
+def cmd_chat():
+    vocab = json.load(open(VOCAB, encoding="utf-8"))
+    c2i = {c: i for i, c in enumerate(vocab)}
+    p = load_bin()
+    turns = []
+    rng = np.random.default_rng(0)
+    while True:
+        try:
+            u = input("あなた> ").strip()
+        except EOFError:
+            break
+        if not u:
+            continue
+        r = generate(p, vocab, build_history(turns, u, c2i), u, 0.5, 8, rng=rng)
+        print("ノックス>", r)
+        turns.append((u, r))
+
+
+def cmd_golden():
+    vocab = json.load(open(VOCAB, encoding="utf-8"))
+    p = load_bin()
+    c2i = {c: i for i, c in enumerate(vocab)}
+    prompt = "ユーザー: こんにちは\n" + BOT
+    ids = encode(prompt, c2i)
+    logits, _ = forward(p, np.array([ids], dtype=np.int32))
+    last = logits[0, -1]
+    gen = generate(p, vocab, "", "こんにちは")
+    gen2 = generate(p, vocab, "", "日本で一番高い山は？")
+    out = {"prompt": prompt, "ids": ids, "last_logits_head": [float(x) for x in last[:32]],
+           "last_argmax": int(last.argmax()), "greedy": [["", "こんにちは", gen], ["", "日本で一番高い山は？", gen2]]}
+    json.dump(out, open(os.path.join(ROOT, "testdata", "golden.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(out["greedy"])
