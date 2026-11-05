@@ -21,3 +21,16 @@ func Default(vocab int) Config {
 
 // HeadDim is the per-head width.
 func (c Config) HeadDim() int { return c.Dim / c.Heads }
+
+// Validate checks the configuration for consistency.
+func (c Config) Validate() error {
+	switch {
+	case c.Vocab < 4:
+		return fmt.Errorf("vocab too small: %d", c.Vocab)
+	case c.Dim <= 0 || c.Layers <= 0 || c.Heads <= 0 || c.FF <= 0 || c.Ctx <= 0:
+		return fmt.Errorf("invalid config: %+v", c)
+	case c.Dim%c.Heads != 0:
+		return fmt.Errorf("dim %d not divisible by heads %d", c.Dim, c.Heads)
+	}
+	return nil
+}
