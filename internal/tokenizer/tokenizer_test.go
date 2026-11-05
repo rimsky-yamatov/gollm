@@ -15,3 +15,13 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("decode = %q", got)
 	}
 }
+
+func TestReservedIDs(t *testing.T) {
+	v := Build([]string{"あ"})
+	if v.Token(Pad) != "<pad>" || v.Token(EOS) != "<eos>" || v.Token(Unk) != "<unk>" {
+		t.Fatal("reserved ids wrong")
+	}
+	if v.Encode("あ")[0] != 3 {
+		t.Fatal("first real token must have id 3")
+	}
+}
