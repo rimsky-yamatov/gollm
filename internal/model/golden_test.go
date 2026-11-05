@@ -98,3 +98,15 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestNumParamsMatchesTensors(t *testing.T) {
+	cfg := Default(670)
+	w := Zeros(cfg)
+	n := 0
+	for _, p := range w.Params() {
+		n += len(p.Data)
+	}
+	if n != cfg.NumParams() {
+		t.Fatalf("tensors hold %d params, NumParams says %d", n, cfg.NumParams())
+	}
+}
