@@ -72,3 +72,59 @@ func loadAll(modelPath, vocabPath string) (*model.Weights, *tokenizer.Vocab, err
 	}
 	return w, v, nil
 }
+
+func runChat(args []string, single bool) error {
+	fs := flag.NewFlagSet("chat", flag.ExitOnError)
+	mp := fs.String("model", "model/gollm.bin", "weights file")
+	vp := fs.String("vocab", "model/vocab.json", "vocab file")
+	temp := fs.Float64("temp", 0.5, "sampling temperature (0 = greedy)")
+	topk := fs.Int("topk", 8, "top-k sampling")
+	seed := fs.Int64("seed", 0, "random seed (0 = time)")
+	prompt := fs.String("prompt", "", "single prompt (gen)")
+	fs.Parse(args)
+
+	w, v, err := loadAll(*mp, *vp)
+	if err != nil {
+		return err
+	}
+	if *seed == 0 {
+		*seed = time.Now().UnixNano()
+	}
+	c := chat.New(w, v, sample.Options{Temp: *temp, TopK: *topk, MaxLen: 120, Rng: rand.New(rand.NewSource(*seed))})
+	if single {
+		if *prompt == "" {
+			return fmt.Errorf("-prompt is required")
+		}
+		r, err := c.Reply(*prompt)
+		if err != nil {
+			return err
+		}
+		fmt.Println(r)
+		return nil
+	}
+	fmt.Println("ノックスです。何でも話しかけてください。(/reset でリセット、/quit で終了)")
+	sc := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("あなた> ")
+		if !sc.Scan() {
+			fmt.Println()
+			return sc.Err()
+		}
+		line := strings.TrimSpace(sc.Text())
+		switch line {
+		case "":
+			continue
+		case "/quit", "/exit":
+			return nil
+		case "/reset":
+			c.Reset()
+			fmt.Println("(会話をリセットしました)")
+			continue
+		}
+		r, err := c.Reply(line)
+		if err != nil {
+			return err
+		}
+		fmt.Println("ノックス>", r)
+	}
+}
