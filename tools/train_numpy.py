@@ -111,3 +111,33 @@ def gelu_bwd(du, u, t):
 def split_heads(x):  # B,T,D -> B,H,T,HD
     B, Tn, _ = x.shape
     return x.reshape(B, Tn, H, HD).transpose(0, 2, 1, 3)
+
+
+def merge_heads(x):  # B,H,T,HD -> B,T,D
+    B, _, Tn, _ = x.shape
+    return x.transpose(0, 2, 1, 3).reshape(B, Tn, D)
+
+
+def forward(p, ids, keep=False):
+    B, Tn = ids.shape
+    x = p["E"][ids] + p["P"][:Tn]
+    caches = []
+    mask = np.triu(np.full((Tn, Tn), -1e9, dtype=np.float32), 1)
+    for l in range(L):
+        h1, c1 = ln_fwd(x, p[f"{l}.ln1g"], p[f"{l}.ln1b"])
+        q = split_heads(h1 @ p[f"{l}.Wq"]); k = split_heads(h1 @ p[f"{l}.Wk"]); v = split_heads(h1 @ p[f"{l}.Wv"])
+        s = q @ k.transpose(0, 1, 3, 2) / math.sqrt(HD) + mask
+        s = s - s.max(-1, keepdims=True)
+        e = np.exp(s)
+        pr = e / e.sum(-1, keepdims=True)
+        o = merge_heads(pr @ v)
+        x = x + o @ p[f"{l}.Wo"]
+        h2, c2 = ln_fwd(x, p[f"{l}.ln2g"], p[f"{l}.ln2b"])
+        u = h2 @ p[f"{l}.W1"] + p[f"{l}.b1"]
+        g, t = gelu_fwd(u)
+        x = x + g @ p[f"{l}.W2"] + p[f"{l}.b2"]
+        if keep:
+            caches.append((h1, c1, q, k, v, pr, o, h2, c2, u, g, t))
+    hf, cf = ln_fwd(x, p["lnfg"], p["lnfb"])
+    logits = hf @ p["E"].T
+    return logits, (ids, caches, hf, cf)
