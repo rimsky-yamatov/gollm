@@ -12,3 +12,11 @@ import (
 
 	"github.com/rimsky-yamatov/gollm/internal/tokenizer"
 )
+
+// BotPrefix is the speaker tag of the assistant; tokens of lines starting
+// with it are the only ones that contribute to the loss.
+const (
+	BotPrefix  = "ノックス:"
+	UserPrefix = "ユーザー: "
+	BotTag     = "ノックス: "
+)
