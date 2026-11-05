@@ -194,3 +194,44 @@ def save_bin(p, V, path=BIN):
         f.write(struct.pack("<6i", V, D, L, H, FF, T))
         for n in param_order():
             f.write(p[n].astype("<f4").tobytes())
+
+
+def load_bin(path=BIN):
+    with open(path, "rb") as f:
+        assert f.read(8) == MAGIC
+        V, d, l, h, ff, t = struct.unpack("<6i", f.read(24))
+        assert (d, l, h, ff, t) == (D, L, H, FF, T)
+        shapes = {"E": (V, D), "P": (T, D), "lnfg": (D,), "lnfb": (D,)}
+        for i in range(L):
+            for n, s in [("ln1g", (D,)), ("ln1b", (D,)), ("Wq", (D, D)), ("Wk", (D, D)), ("Wv", (D, D)), ("Wo", (D, D)),
+                         ("ln2g", (D,)), ("ln2b", (D,)), ("W1", (D, FF)), ("b1", (FF,)), ("W2", (FF, D)), ("b2", (D,))]:
+                shapes[f"{i}.{n}"] = s
+        p = {}
+        for n in param_order():
+            cnt = int(np.prod(shapes[n]))
+            p[n] = np.frombuffer(f.read(4 * cnt), dtype="<f4").reshape(shapes[n]).copy()
+    return p
+
+
+# ---------------- generation ----------------
+def generate(p, vocab, history, user, temp=0.0, topk=1, maxlen=120, rng=None):
+    c2i = {c: i for i, c in enumerate(vocab)}
+    prompt = history + "ユーザー: " + user + "\n" + BOT
+    ids = encode(prompt, c2i)
+    out = ""
+    for _ in range(maxlen):
+        ctx = ids[-T:]
+        logits, _ = forward(p, np.array([ctx], dtype=np.int32))
+        lg = logits[0, -1].astype(np.float64)
+        lg[[PAD, UNK, EOS]] = -1e9
+        if temp <= 0:
+            nxt = int(lg.argmax())
+        else:
+            idx = np.argsort(lg)[-topk:]
+            pr = np.exp((lg[idx] - lg[idx].max()) / temp)
+            nxt = int(rng.choice(idx, p=pr / pr.sum()))
+        ids.append(nxt)
+        if vocab[nxt] == "\n":
+            break
+        out += vocab[nxt]
+    return out
