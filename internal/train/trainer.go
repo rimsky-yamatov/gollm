@@ -151,3 +151,38 @@ func (t *Trainer) attnBwd(a *layerAct) {
 		}
 	})
 }
+
+func (t *Trainer) forward(ids []int32) {
+	c := t.cfg
+	d, ff, N, V := c.Dim, c.FF, t.N, c.Vocab
+	t.ids = ids
+	for n := 0; n < N; n++ {
+		e := t.W.E[int(ids[n])*d : (int(ids[n])+1)*d]
+		p := t.W.P[(n%t.T)*d : (n%t.T+1)*d]
+		x := t.x[n*d : (n+1)*d]
+		for i := range x {
+			x[i] = e[i] + p[i]
+		}
+	}
+	for l := range t.W.L {
+		ly := &t.W.L[l]
+		a := &t.ac[l]
+		tensor.LayerNormFwd(a.h1, a.xh1, a.rs1, t.x, ly.Ln1G, ly.Ln1B, N, d)
+		tensor.MatMul(a.q, a.h1, ly.Wq, N, d, d)
+		tensor.MatMul(a.k, a.h1, ly.Wk, N, d, d)
+		tensor.MatMul(a.v, a.h1, ly.Wv, N, d, d)
+		t.attnFwd(a)
+		tensor.MatMul(t.tmp, a.o, ly.Wo, N, d, d)
+		tensor.AddInPlace(t.x, t.tmp)
+
+		tensor.LayerNormFwd(a.h2, a.xh2, a.rs2, t.x, ly.Ln2G, ly.Ln2B, N, d)
+		tensor.MatMul(a.u, a.h2, ly.W1, N, d, ff)
+		tensor.AddBias(a.u, ly.B1, N, ff)
+		tensor.GeluFwd(a.gl, a.th, a.u)
+		tensor.MatMul(t.tmp, a.gl, ly.W2, N, ff, d)
+		tensor.AddBias(t.tmp, ly.B2, N, d)
+		tensor.AddInPlace(t.x, t.tmp)
+	}
+	tensor.LayerNormFwd(t.hf, t.xhf, t.rsf, t.x, t.W.LnfG, t.W.LnfB, N, d)
+	tensor.MatMulBT(t.logits, t.hf, t.W.E, N, d, V)
+}
