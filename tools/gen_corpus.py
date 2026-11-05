@@ -452,3 +452,47 @@ assert len(TOPICS) == len(WEIGHTS)
 
 def render(turns):
     return "".join("ユーザー: {}\n{}: {}\n".format(u, BOT, b) for u, b in turns)
+
+
+def make_conv():
+    turns = []
+    if random.random() < 0.25:
+        turns += sc_opener()
+    for _ in range(random.choice([1, 1, 2])):
+        turns += random.choices(TOPICS, WEIGHTS)[0]()
+    if random.random() < 0.18:
+        turns += sc_closer()
+    turns = turns[:4]
+    s = render(turns)
+    while len(s) > 230 and len(turns) > 1:
+        turns.pop()
+        s = render(turns)
+    return s
+
+
+def main():
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else 60000
+    shards = int(sys.argv[2]) if len(sys.argv) > 2 else 60
+    seen, convs = set(), []
+    tries = 0
+    while len(convs) < n and tries < n * 20:
+        tries += 1
+        c = make_conv()
+        if c in seen:
+            continue
+        seen.add(c)
+        convs.append(c)
+    os.makedirs("data/corpus", exist_ok=True)
+    per = (len(convs) + shards - 1) // shards
+    for i in range(shards):
+        part = convs[i * per:(i + 1) * per]
+        if not part:
+            break
+        with open("data/corpus/dialogues_%04d.txt" % (i + 1), "w", encoding="utf-8") as f:
+            f.write("\n".join(part))
+    total = sum(len(c) for c in convs)
+    print("conversations:", len(convs), "chars:", total)
+
+
+if __name__ == "__main__":
+    main()
