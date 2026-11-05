@@ -54,3 +54,26 @@ type Stream struct {
 	Mask   []float32
 	Starts []int // token offset of each conversation
 }
+
+// BuildStream tokenises conversations, appending <eos> after each.
+func BuildStream(convs []string, v *tokenizer.Vocab) *Stream {
+	s := &Stream{}
+	for _, c := range convs {
+		s.Starts = append(s.Starts, len(s.IDs))
+		lines := strings.Split(c, "\n")
+		for _, line := range lines[:len(lines)-1] {
+			line += "\n"
+			var m float32
+			if strings.HasPrefix(line, BotPrefix) {
+				m = 1
+			}
+			for _, id := range v.Encode(line) {
+				s.IDs = append(s.IDs, int32(id))
+				s.Mask = append(s.Mask, m)
+			}
+		}
+		s.IDs = append(s.IDs, tokenizer.EOS)
+		s.Mask = append(s.Mask, 0)
+	}
+	return s
+}
