@@ -112,3 +112,42 @@ func (t *Trainer) attnFwd(a *layerAct) {
 		}
 	})
 }
+
+func (t *Trainer) attnBwd(a *layerAct) {
+	c := t.cfg
+	d, hd, T, H := c.Dim, c.HeadDim(), t.T, c.Heads
+	scale := float32(1 / math.Sqrt(float64(hd)))
+	tensor.Parallel(t.B*H, func(lo, hi int) {
+		dpr := make([]float32, T)
+		for bh := lo; bh < hi; bh++ {
+			b, h := bh/H, bh%H
+			for i := 0; i < T; i++ {
+				doi := t.dO[(b*T+i)*d+h*hd : (b*T+i)*d+(h+1)*hd]
+				pr := a.pr[(bh*T+i)*T : (bh*T+i)*T+T]
+				var dot float32
+				for j := 0; j <= i; j++ {
+					vj := a.v[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					dvj := t.dv[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					var s float32
+					for u := 0; u < hd; u++ {
+						s += doi[u] * vj[u]
+						dvj[u] += pr[j] * doi[u]
+					}
+					dpr[j] = s
+					dot += s * pr[j]
+				}
+				qi := a.q[(b*T+i)*d+h*hd : (b*T+i)*d+(h+1)*hd]
+				dqi := t.dq[(b*T+i)*d+h*hd : (b*T+i)*d+(h+1)*hd]
+				for j := 0; j <= i; j++ {
+					ds := pr[j] * (dpr[j] - dot) * scale
+					kj := a.k[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					dkj := t.dk[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					for u := 0; u < hd; u++ {
+						dqi[u] += ds * kj[u]
+						dkj[u] += ds * qi[u]
+					}
+				}
+			}
+		}
+	})
+}
