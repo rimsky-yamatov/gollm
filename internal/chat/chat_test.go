@@ -10,3 +10,17 @@ import (
 	"github.com/rimsky-yamatov/gollm/internal/sample"
 	"github.com/rimsky-yamatov/gollm/internal/tokenizer"
 )
+
+func TestBuildPromptDropsOldTurns(t *testing.T) {
+	v := tokenizer.Build([]string{"ユーザー: ノックス\nあいうえお"})
+	long := ""
+	for i := 0; i < 80; i++ {
+		long += "あ"
+	}
+	turns := []Turn{{long, long}, {"い", "う"}}
+	p := BuildPrompt(turns, "え", v, 128)
+	want := "ユーザー: い\nノックス: う\nユーザー: え\nノックス: "
+	if p != want {
+		t.Fatalf("prompt = %q", p)
+	}
+}
