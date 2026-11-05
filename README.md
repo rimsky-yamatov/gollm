@@ -10,3 +10,12 @@
 - 学習データ `data/corpus/` に約6万会話・約700万文字を同梱
 - 学習済み重み `model/gollm.bin`(約2.7MB)ですぐ会話できる
 
+## 使い方
+
+```sh
+go run ./cmd/gollm chat          # 対話
+go run ./cmd/gollm gen -prompt "こんにちは"
+go run ./cmd/gollm train -steps 4000   # Goで最初から学習
+go test ./...
+```
+
