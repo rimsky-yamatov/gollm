@@ -26,3 +26,11 @@ type Chat struct {
 	Opts  sample.Options
 	turns []Turn
 }
+
+// New creates a Chat.
+func New(w *model.Weights, v *tokenizer.Vocab, o sample.Options) *Chat {
+	if o.MaxLen <= 0 {
+		o.MaxLen = 120
+	}
+	return &Chat{Sess: model.NewSession(w), Voc: v, Opts: o}
+}
