@@ -87,3 +87,18 @@ def ln_fwd(x, g, b):
     rstd = 1.0 / np.sqrt(var + 1e-5)
     xh = xc * rstd
     return xh * g + b, (xh, rstd)
+
+
+def ln_bwd(dy, g, cache):
+    xh, rstd = cache
+    dxh = dy * g
+    dx = rstd * (dxh - dxh.mean(-1, keepdims=True) - xh * (dxh * xh).mean(-1, keepdims=True))
+    return dx, (dy * xh).reshape(-1, dy.shape[-1]).sum(0), dy.reshape(-1, dy.shape[-1]).sum(0)
+
+
+C0 = math.sqrt(2.0 / math.pi)
+
+
+def gelu_fwd(u):
+    t = np.tanh(C0 * (u + 0.044715 * u ** 3))
+    return 0.5 * u * (1 + t), t
