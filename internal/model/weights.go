@@ -141,3 +141,35 @@ func Save(path string, w *Weights) error {
 	}
 	return f.Close()
 }
+
+// Load reads weights written by Save (or by tools/train_numpy.py).
+func Load(path string) (*Weights, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	br := bufio.NewReader(f)
+	m := make([]byte, len(magic))
+	if _, err := io.ReadFull(br, m); err != nil {
+		return nil, err
+	}
+	if string(m) != magic {
+		return nil, errors.New("not a gollm weights file (bad magic)")
+	}
+	hdr := make([]int32, 6)
+	if err := binary.Read(br, binary.LittleEndian, hdr); err != nil {
+		return nil, err
+	}
+	cfg := Config{Vocab: int(hdr[0]), Dim: int(hdr[1]), Layers: int(hdr[2]), Heads: int(hdr[3]), FF: int(hdr[4]), Ctx: int(hdr[5])}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	w := Zeros(cfg)
+	for _, p := range w.Params() {
+		if err := binary.Read(br, binary.LittleEndian, p.Data); err != nil {
+			return nil, fmt.Errorf("read %s: %w", p.Name, err)
+		}
+	}
+	return w, nil
+}
