@@ -77,3 +77,17 @@ func BuildStream(convs []string, v *tokenizer.Vocab) *Stream {
 	}
 	return s
 }
+
+// Batch fills x, y (inputs / next-token targets) and w (loss weights) with
+// batch windows of length T that start at random conversation boundaries.
+func (s *Stream) Batch(rng *rand.Rand, batch, T int, x, y []int32, w []float32) {
+	n := len(s.IDs)
+	for b := 0; b < batch; b++ {
+		st := s.Starts[rng.Intn(len(s.Starts))]
+		for t := 0; t < T; t++ {
+			x[b*T+t] = s.IDs[(st+t)%n]
+			y[b*T+t] = s.IDs[(st+t+1)%n]
+			w[b*T+t] = s.Mask[(st+t+1)%n]
+		}
+	}
+}
