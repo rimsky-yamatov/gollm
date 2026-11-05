@@ -332,3 +332,37 @@ def cmd_golden():
            "last_argmax": int(last.argmax()), "greedy": [["", "こんにちは", gen], ["", "日本で一番高い山は？", gen2]]}
     json.dump(out, open(os.path.join(ROOT, "testdata", "golden.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print(out["greedy"])
+
+
+def cmd_gradcheck():
+    rng = np.random.default_rng(0)
+    p = init_params(40, rng)
+    for k in p:
+        p[k] = p[k] + rng.normal(0, 0.05, p[k].shape).astype(np.float32)
+    ids = rng.integers(0, 40, (2, 10)); tgt = rng.integers(0, 40, (2, 10)); w = np.ones((2, 10), np.float32)
+    p64 = {k: v.astype(np.float64) for k, v in p.items()}
+    _, g = loss_and_grads(p64, ids, tgt, w)
+    worst = 0
+    for k in ["E", "0.Wq", "1.Wk", "2.W1", "0.ln1g", "1.b2", "P", "lnfg"]:
+        a = p64[k]; idx = tuple(int(rng.integers(0, s)) for s in a.shape)
+        e = 1e-5; old = a[idx]
+        a[idx] = old + e; l1, _ = loss_and_grads(p64, ids, tgt, w)
+        a[idx] = old - e; l2, _ = loss_and_grads(p64, ids, tgt, w)
+        a[idx] = old
+        num = (l1 - l2) / (2 * e); ana = g[k][idx]
+        rel = abs(num - ana) / (abs(num) + abs(ana) + 1e-12)
+        worst = max(worst, rel)
+        print(k, idx, f"num={num:.6e} ana={ana:.6e} rel={rel:.2e}")
+    print("worst rel err", worst)
+
+
+if __name__ == "__main__":
+    c = sys.argv[1] if len(sys.argv) > 1 else "train"
+    if c == "train":
+        cmd_train(int(sys.argv[2]) if len(sys.argv) > 2 else 4000)
+    elif c == "chat":
+        cmd_chat()
+    elif c == "golden":
+        cmd_golden()
+    elif c == "gradcheck":
+        cmd_gradcheck()
