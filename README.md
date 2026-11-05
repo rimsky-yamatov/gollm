@@ -58,3 +58,6 @@ Go実装は `go test` の `TestMatchesReference` / `TestGreedyMatchesReference` 
 - 学習に出てこなかった名前の復唱や、計算(1桁同士でも)は間違えることがあります。
 - 時刻・天気など外部情報は持たず、分からないと答える設計です。
 
+## ライセンス
+
+MIT
