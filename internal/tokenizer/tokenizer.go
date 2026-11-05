@@ -96,3 +96,19 @@ func (v *Vocab) Save(path string) error {
 	}
 	return os.WriteFile(path, b, 0o644)
 }
+
+// Load reads a vocabulary written by Save (or by tools/train_numpy.py).
+func Load(path string) (*Vocab, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var toks []string
+	if err := json.Unmarshal(b, &toks); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	if len(toks) < 3 {
+		return nil, fmt.Errorf("vocab %s too small", path)
+	}
+	return New(toks), nil
+}
