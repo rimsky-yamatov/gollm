@@ -18,3 +18,11 @@ const (
 
 // Turn is one user/assistant exchange.
 type Turn struct{ User, Bot string }
+
+// Chat keeps the dialogue history and generates replies.
+type Chat struct {
+	Sess  *model.Session
+	Voc   *tokenizer.Vocab
+	Opts  sample.Options
+	turns []Turn
+}
