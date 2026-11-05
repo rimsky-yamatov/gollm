@@ -34,3 +34,25 @@ func Parallel(n int, fn func(lo, hi int)) {
 	}
 	wg.Wait()
 }
+
+// MatMul computes out[m*n] = a[m*k] · b[k*n] (out is overwritten).
+func MatMul(out, a, b []float32, m, k, n int) {
+	Parallel(m, func(lo, hi int) {
+		for i := lo; i < hi; i++ {
+			o := out[i*n : (i+1)*n]
+			for j := range o {
+				o[j] = 0
+			}
+			ar := a[i*k : (i+1)*k]
+			for p, av := range ar {
+				if av == 0 {
+					continue
+				}
+				br := b[p*n : (p+1)*n]
+				for j, bv := range br {
+					o[j] += av * bv
+				}
+			}
+		}
+	})
+}
