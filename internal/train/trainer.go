@@ -186,3 +186,9 @@ func (t *Trainer) forward(ids []int32) {
 	tensor.LayerNormFwd(t.hf, t.xhf, t.rsf, t.x, t.W.LnfG, t.W.LnfB, N, d)
 	tensor.MatMulBT(t.logits, t.hf, t.W.E, N, d, V)
 }
+
+// Loss runs a forward pass only and returns the masked mean cross-entropy.
+func (t *Trainer) Loss(ids, tgt []int32, w []float32) float32 {
+	t.forward(ids)
+	return float32(t.lossAndDLogits(tgt, w))
+}
