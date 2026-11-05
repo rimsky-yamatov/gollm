@@ -126,3 +126,23 @@ func ColSumAcc(out, x []float32, rows, d int) {
 		}
 	}
 }
+
+// Softmax normalises row in place (numerically stable).
+func Softmax(row []float32) {
+	mx := row[0]
+	for _, v := range row {
+		if v > mx {
+			mx = v
+		}
+	}
+	var sum float64
+	for i, v := range row {
+		e := math.Exp(float64(v - mx))
+		row[i] = float32(e)
+		sum += e
+	}
+	inv := float32(1 / sum)
+	for i := range row {
+		row[i] *= inv
+	}
+}
