@@ -18,3 +18,16 @@ BOT = "ノックス: "
 MAGIC = b"GOLLM001"
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BIN = os.path.join(ROOT, "model", "gollm.bin")
+VOCAB = os.path.join(ROOT, "model", "vocab.json")
+
+
+# ---------------- data ----------------
+def load_convs():
+    convs = []
+    for f in sorted(glob.glob(os.path.join(ROOT, "data", "corpus", "*.txt"))):
+        txt = open(f, encoding="utf-8").read()
+        for c in txt.split("\n\n"):
+            c = c.strip("\n")
+            if c:
+                convs.append(c + "\n")
+    return convs
