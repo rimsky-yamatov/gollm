@@ -60,3 +60,55 @@ func NewTrainer(w *model.Weights, batch, T int) *Trainer {
 	}
 	return t
 }
+
+func (t *Trainer) attnFwd(a *layerAct) {
+	c := t.cfg
+	d, hd, T, H := c.Dim, c.HeadDim(), t.T, c.Heads
+	scale := float32(1 / math.Sqrt(float64(hd)))
+	tensor.Parallel(t.B*H, func(lo, hi int) {
+		for bh := lo; bh < hi; bh++ {
+			b, h := bh/H, bh%H
+			for i := 0; i < T; i++ {
+				qi := a.q[(b*T+i)*d+h*hd : (b*T+i)*d+(h+1)*hd]
+				pr := a.pr[(bh*T+i)*T : (bh*T+i)*T+T]
+				mx := float32(-1e30)
+				for j := 0; j <= i; j++ {
+					kj := a.k[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					var s float32
+					for u := 0; u < hd; u++ {
+						s += qi[u] * kj[u]
+					}
+					s *= scale
+					pr[j] = s
+					if s > mx {
+						mx = s
+					}
+				}
+				var sum float32
+				for j := 0; j <= i; j++ {
+					e := float32(math.Exp(float64(pr[j] - mx)))
+					pr[j] = e
+					sum += e
+				}
+				inv := 1 / sum
+				for j := 0; j <= i; j++ {
+					pr[j] *= inv
+				}
+				for j := i + 1; j < T; j++ {
+					pr[j] = 0
+				}
+				oi := a.o[(b*T+i)*d+h*hd : (b*T+i)*d+(h+1)*hd]
+				for u := range oi {
+					oi[u] = 0
+				}
+				for j := 0; j <= i; j++ {
+					vj := a.v[(b*T+j)*d+h*hd : (b*T+j)*d+(h+1)*hd]
+					p := pr[j]
+					for u := range oi {
+						oi[u] += p * vj[u]
+					}
+				}
+			}
+		}
+	})
+}
