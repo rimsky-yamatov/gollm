@@ -331,3 +331,6 @@ func (t *Trainer) Update(lr float64) float64 {
 	}
 	return gn
 }
+
+// Steps returns the number of optimiser updates performed.
+func (t *Trainer) Steps() int { return t.step }
