@@ -143,3 +143,17 @@ func runTrain(args []string) error {
 	fs.Parse(args)
 	return train.Run(o)
 }
+
+func runInfo(args []string) error {
+	fs := flag.NewFlagSet("info", flag.ExitOnError)
+	mp := fs.String("model", "model/gollm.bin", "weights file")
+	fs.Parse(args)
+	w, err := model.Load(*mp)
+	if err != nil {
+		return err
+	}
+	c := w.Cfg
+	fmt.Printf("vocab=%d dim=%d layers=%d heads=%d ff=%d ctx=%d params=%d\n",
+		c.Vocab, c.Dim, c.Layers, c.Heads, c.FF, c.Ctx, c.NumParams())
+	return nil
+}
