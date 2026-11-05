@@ -20,3 +20,12 @@ type Layer struct {
 	W1, B1     []float32
 	W2, B2     []float32
 }
+
+// Weights is the complete parameter set. The output projection is tied to E.
+type Weights struct {
+	Cfg        Config
+	E          []float32 // token embedding [Vocab*Dim]
+	P          []float32 // position embedding [Ctx*Dim]
+	L          []Layer
+	LnfG, LnfB []float32
+}
