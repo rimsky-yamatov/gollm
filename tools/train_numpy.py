@@ -40,3 +40,34 @@ def build_vocab(convs):
 
 def encode(s, c2i):
     return [c2i.get(ch, UNK) for ch in s]
+
+
+def build_stream(convs, c2i):
+    ids, mask, starts = [], [], []
+    for c in convs:
+        starts.append(len(ids))
+        for line in c.split("\n")[:-1]:
+            line += "\n"
+            m = 1.0 if line.startswith("ノックス:") else 0.0
+            for ch in line:
+                ids.append(c2i.get(ch, UNK))
+                mask.append(m)
+        ids.append(EOS)
+        mask.append(0.0)
+    return np.array(ids, dtype=np.int32), np.array(mask, dtype=np.float32), np.array(starts)
+
+
+# ---------------- model ----------------
+def init_params(V, rng):
+    s = 0.02
+    p = {"E": rng.normal(0, s, (V, D)), "P": rng.normal(0, s, (T, D)),
+         "lnfg": np.ones(D), "lnfb": np.zeros(D)}
+    for l in range(L):
+        p[f"{l}.ln1g"] = np.ones(D); p[f"{l}.ln1b"] = np.zeros(D)
+        p[f"{l}.Wq"] = rng.normal(0, s, (D, D)); p[f"{l}.Wk"] = rng.normal(0, s, (D, D))
+        p[f"{l}.Wv"] = rng.normal(0, s, (D, D))
+        p[f"{l}.Wo"] = rng.normal(0, s / math.sqrt(2 * L), (D, D))
+        p[f"{l}.ln2g"] = np.ones(D); p[f"{l}.ln2b"] = np.zeros(D)
+        p[f"{l}.W1"] = rng.normal(0, s, (D, FF)); p[f"{l}.b1"] = np.zeros(FF)
+        p[f"{l}.W2"] = rng.normal(0, s / math.sqrt(2 * L), (FF, D)); p[f"{l}.b2"] = np.zeros(D)
+    return {k: v.astype(np.float32) for k, v in p.items()}
