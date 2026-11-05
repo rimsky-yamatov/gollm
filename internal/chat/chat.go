@@ -58,3 +58,14 @@ func BuildPrompt(turns []Turn, user string, v *tokenizer.Vocab, ctx int) string 
 func (c *Chat) prompt(user string) string {
 	return BuildPrompt(c.turns, user, c.Voc, c.Sess.W.Cfg.Ctx)
 }
+
+// Reply generates the assistant's answer to user and records the turn.
+func (c *Chat) Reply(user string) (string, error) {
+	user = strings.TrimSpace(strings.ReplaceAll(user, "\n", " "))
+	out, err := Generate(c.Sess, c.Voc, c.prompt(user), c.Opts)
+	if err != nil {
+		return "", err
+	}
+	c.turns = append(c.turns, Turn{user, out})
+	return out, nil
+}
