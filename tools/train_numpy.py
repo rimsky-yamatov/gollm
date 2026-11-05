@@ -31,3 +31,12 @@ def load_convs():
             if c:
                 convs.append(c + "\n")
     return convs
+
+
+def build_vocab(convs):
+    chars = sorted(set("".join(convs)))
+    return ["<pad>", "<eos>", "<unk>"] + chars
+
+
+def encode(s, c2i):
+    return [c2i.get(ch, UNK) for ch in s]
