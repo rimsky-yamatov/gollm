@@ -39,3 +39,11 @@ func DefaultOptions() Options {
 		Arch: model.Default(0),
 	}
 }
+
+// LRAt returns the learning rate for a step: linear warm-up, then cosine
+// decay to 5% of the peak.
+func LRAt(o Options, step int) float64 {
+	warm := math.Min(1, float64(step+1)/float64(o.Warmup))
+	cos := 0.05 + 0.95*0.5*(1+math.Cos(math.Pi*float64(step)/float64(o.Steps)))
+	return o.LR * warm * cos
+}
