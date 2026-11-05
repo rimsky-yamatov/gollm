@@ -21,3 +21,16 @@ func TestMatMul(t *testing.T) {
 		}
 	}
 }
+
+func TestMatMulBT(t *testing.T) {
+	a := []float32{1, 2, 3, 4, 5, 6}    // 2x3
+	b := []float32{7, 9, 11, 8, 10, 12} // (3x2)ᵀ stored as 2x3
+	out := make([]float32, 4)
+	MatMulBT(out, a, b, 2, 3, 2)
+	want := []float32{58, 64, 139, 154}
+	for i := range want {
+		if out[i] != want[i] {
+			t.Fatalf("MatMulBT[%d] = %v, want %v", i, out[i], want[i])
+		}
+	}
+}
