@@ -46,3 +46,15 @@ func (s *Session) Pos() int { return s.pos }
 
 // Reset clears the context.
 func (s *Session) Reset() { s.pos = 0 }
+
+// Feed consumes tokens and returns the logits after the last one.
+func (s *Session) Feed(ids []int) ([]float32, error) {
+	var lg []float32
+	var err error
+	for _, id := range ids {
+		if lg, err = s.Step(id); err != nil {
+			return nil, err
+		}
+	}
+	return lg, nil
+}
