@@ -106,3 +106,13 @@ func Zero(a []float32) {
 		a[i] = 0
 	}
 }
+
+// AddBias adds the vector b (length d) to each of the rows of x.
+func AddBias(x, b []float32, rows, d int) {
+	for r := 0; r < rows; r++ {
+		xr := x[r*d : (r+1)*d]
+		for i, bv := range b {
+			xr[i] += bv
+		}
+	}
+}
