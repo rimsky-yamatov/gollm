@@ -18,3 +18,6 @@ type Config struct {
 func Default(vocab int) Config {
 	return Config{Vocab: vocab, Dim: 128, Layers: 3, Heads: 4, FF: 512, Ctx: 128}
 }
+
+// HeadDim is the per-head width.
+func (c Config) HeadDim() int { return c.Dim / c.Heads }
