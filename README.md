@@ -47,3 +47,8 @@ go test ./...
 | `data/corpus/` | 学習コーパス(60シャード) |
 | `testdata/golden.json` | numpy 実装との照合データ |
 
+## 学習済みモデルについて
+
+同梱の `gollm.bin` は、Go のツールチェーンが無い環境で作ったため `tools/train_numpy.py`(Go実装と同一の数式・重み形式)で4000ステップ学習したものです。
+Go実装は `go test` の `TestMatchesReference` / `TestGreedyMatchesReference` で、この重みの出力が numpy 版と一致することを確認できます。
+
