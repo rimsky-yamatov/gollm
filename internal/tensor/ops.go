@@ -146,3 +146,5 @@ func Softmax(row []float32) {
 		row[i] *= inv
 	}
 }
+
+const lnEps = 1e-5
