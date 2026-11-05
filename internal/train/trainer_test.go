@@ -58,3 +58,28 @@ func TestGradientCheck(t *testing.T) {
 		t.Fatal("nothing checked")
 	}
 }
+
+func TestTrainingReducesLoss(t *testing.T) {
+	cfg := model.Config{Vocab: 8, Dim: 16, Layers: 1, Heads: 2, FF: 32, Ctx: 8}
+	rng := rand.New(rand.NewSource(1))
+	w := model.New(cfg, rng)
+	const B, T = 4, 8
+	tr := NewTrainer(w, B, T)
+	ids := make([]int32, B*T)
+	tgt := make([]int32, B*T)
+	wt := make([]float32, B*T)
+	for i := range ids { // repeating pattern 3,4,5,6,3,4,5,6...
+		ids[i] = int32(3 + i%4)
+		tgt[i] = int32(3 + (i+1)%4)
+		wt[i] = 1
+	}
+	first := tr.LossGrad(ids, tgt, wt)
+	var last float32
+	for s := 0; s < 100; s++ {
+		last = tr.LossGrad(ids, tgt, wt)
+		tr.Update(2e-2)
+	}
+	if !(last < first*0.5) {
+		t.Fatalf("loss did not drop enough: %.4f -> %.4f", first, last)
+	}
+}
