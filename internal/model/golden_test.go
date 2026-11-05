@@ -110,3 +110,16 @@ func TestNumParamsMatchesTensors(t *testing.T) {
 		t.Fatalf("tensors hold %d params, NumParams says %d", n, cfg.NumParams())
 	}
 }
+
+func TestSessionContextFull(t *testing.T) {
+	cfg := Config{Vocab: 9, Dim: 8, Layers: 1, Heads: 2, FF: 16, Ctx: 3}
+	s := NewSession(New(cfg, newRand(1)))
+	for i := 0; i < 3; i++ {
+		if _, err := s.Step(3); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.Step(3); err != ErrContextFull {
+		t.Fatalf("err = %v, want ErrContextFull", err)
+	}
+}
