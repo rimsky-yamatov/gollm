@@ -73,3 +73,22 @@ func MatMulBT(out, a, b []float32, m, k, n int) {
 		}
 	})
 }
+
+// MatMulATAcc accumulates out[k*n] += aᵀ · b where a is [m*k] and b is [m*n].
+func MatMulATAcc(out, a, b []float32, m, k, n int) {
+	Parallel(k, func(lo, hi int) {
+		for r := 0; r < m; r++ {
+			br := b[r*n : (r+1)*n]
+			for i := lo; i < hi; i++ {
+				av := a[r*k+i]
+				if av == 0 {
+					continue
+				}
+				o := out[i*n : (i+1)*n]
+				for j, bv := range br {
+					o[j] += av * bv
+				}
+			}
+		}
+	})
+}
