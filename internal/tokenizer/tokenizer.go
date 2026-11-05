@@ -54,3 +54,16 @@ func Build(texts []string) *Vocab {
 
 // Size returns the number of tokens.
 func (v *Vocab) Size() int { return len(v.Tokens) }
+
+// Encode converts text to ids; unknown characters map to Unk.
+func (v *Vocab) Encode(s string) []int {
+	out := make([]int, 0, len(s)/2)
+	for _, r := range s {
+		if id, ok := v.index[string(r)]; ok {
+			out = append(out, id)
+		} else {
+			out = append(out, Unk)
+		}
+	}
+	return out
+}
