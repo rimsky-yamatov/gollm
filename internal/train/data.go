@@ -47,3 +47,10 @@ func LoadConversations(dir string) ([]string, error) {
 	}
 	return convs, nil
 }
+
+// Stream is the whole corpus as one token sequence with a loss mask.
+type Stream struct {
+	IDs    []int32
+	Mask   []float32
+	Starts []int // token offset of each conversation
+}
