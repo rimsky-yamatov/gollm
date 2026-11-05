@@ -71,3 +71,19 @@ def init_params(V, rng):
         p[f"{l}.W1"] = rng.normal(0, s, (D, FF)); p[f"{l}.b1"] = np.zeros(FF)
         p[f"{l}.W2"] = rng.normal(0, s / math.sqrt(2 * L), (FF, D)); p[f"{l}.b2"] = np.zeros(D)
     return {k: v.astype(np.float32) for k, v in p.items()}
+
+
+def param_order():
+    names = ["E", "P"]
+    for l in range(L):
+        names += [f"{l}.{n}" for n in ["ln1g", "ln1b", "Wq", "Wk", "Wv", "Wo", "ln2g", "ln2b", "W1", "b1", "W2", "b2"]]
+    return names + ["lnfg", "lnfb"]
+
+
+def ln_fwd(x, g, b):
+    mu = x.mean(-1, keepdims=True)
+    xc = x - mu
+    var = (xc * xc).mean(-1, keepdims=True)
+    rstd = 1.0 / np.sqrt(var + 1e-5)
+    xh = xc * rstd
+    return xh * g + b, (xh, rstd)
