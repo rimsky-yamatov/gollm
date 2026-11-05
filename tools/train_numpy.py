@@ -141,3 +141,56 @@ def forward(p, ids, keep=False):
     hf, cf = ln_fwd(x, p["lnfg"], p["lnfb"])
     logits = hf @ p["E"].T
     return logits, (ids, caches, hf, cf)
+
+
+def loss_and_grads(p, ids, tgt, w):
+    logits, (ids, caches, hf, cf) = forward(p, ids, keep=True)
+    B, Tn, V = logits.shape
+    z = logits - logits.max(-1, keepdims=True)
+    ez = np.exp(z)
+    sm = ez / ez.sum(-1, keepdims=True)
+    lse = np.log(ez.sum(-1))
+    nll = lse - np.take_along_axis(z, tgt[..., None], -1)[..., 0]
+    wsum = max(w.sum(), 1.0)
+    loss = float((nll * w).sum() / wsum)
+    dl = sm
+    np.put_along_axis(dl, tgt[..., None], np.take_along_axis(dl, tgt[..., None], -1) - 1.0, -1)
+    dl *= (w / wsum)[..., None]
+    gr = {k: np.zeros_like(v) for k, v in p.items()}
+    gr["E"] += dl.reshape(-1, V).T @ hf.reshape(-1, D)
+    dhf = dl @ p["E"]
+    dx, gr["lnfg"], gr["lnfb"] = ln_bwd(dhf, p["lnfg"], cf)
+    for l in reversed(range(L)):
+        h1, c1, q, k, v, pr, o, h2, c2, u, g, t = caches[l]
+        flat = lambda a: a.reshape(-1, a.shape[-1])
+        gr[f"{l}.W2"] = flat(g).T @ flat(dx); gr[f"{l}.b2"] = flat(dx).sum(0)
+        dg = dx @ p[f"{l}.W2"].T
+        du = gelu_bwd(dg, u, t)
+        gr[f"{l}.W1"] = flat(h2).T @ flat(du); gr[f"{l}.b1"] = flat(du).sum(0)
+        dh2 = du @ p[f"{l}.W1"].T
+        dxl, gr[f"{l}.ln2g"], gr[f"{l}.ln2b"] = ln_bwd(dh2, p[f"{l}.ln2g"], c2)
+        dx = dx + dxl
+        gr[f"{l}.Wo"] = flat(o).T @ flat(dx)
+        do = split_heads(dx @ p[f"{l}.Wo"].T)
+        dpr = do @ v.transpose(0, 1, 3, 2)
+        dv = pr.transpose(0, 1, 3, 2) @ do
+        ds = pr * (dpr - (dpr * pr).sum(-1, keepdims=True)) / math.sqrt(HD)
+        dq = ds @ k
+        dk = ds.transpose(0, 1, 3, 2) @ q
+        dq, dk, dv = merge_heads(dq), merge_heads(dk), merge_heads(dv)
+        gr[f"{l}.Wq"] = flat(h1).T @ flat(dq); gr[f"{l}.Wk"] = flat(h1).T @ flat(dk); gr[f"{l}.Wv"] = flat(h1).T @ flat(dv)
+        dh1 = dq @ p[f"{l}.Wq"].T + dk @ p[f"{l}.Wk"].T + dv @ p[f"{l}.Wv"].T
+        dxl, gr[f"{l}.ln1g"], gr[f"{l}.ln1b"] = ln_bwd(dh1, p[f"{l}.ln1g"], c1)
+        dx = dx + dxl
+    np.add.at(gr["E"], ids.reshape(-1), dx.reshape(-1, D))
+    gr["P"][:Tn] += dx.sum(0)
+    return loss, gr
+
+
+# ---------------- io ----------------
+def save_bin(p, V, path=BIN):
+    with open(path, "wb") as f:
+        f.write(MAGIC)
+        f.write(struct.pack("<6i", V, D, L, H, FF, T))
+        for n in param_order():
+            f.write(p[n].astype("<f4").tobytes())
