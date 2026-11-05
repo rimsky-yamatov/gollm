@@ -51,3 +51,6 @@ func Build(texts []string) *Vocab {
 	}
 	return New(toks)
 }
+
+// Size returns the number of tokens.
+func (v *Vocab) Size() int { return len(v.Tokens) }
