@@ -422,3 +422,33 @@ def sc_unknown_input():
                "ほんとに？": "はい、本当ですよ。気になることがあれば、何でも聞いてくださいね。"}
     b = special.get(u) or R(["うまく聞き取れなかったかもしれません。もう一度、教えてもらえますか？", "ごめんなさい、よく分かりませんでした。もう少し詳しく教えてもらえますか？"])
     return [(u, b)]
+
+
+def sc_repeat_help():
+    u = R(["もう一回言って", "もう少し詳しく教えて", "どういう意味？", "もっとゆっくり話して"])
+    b = R(["はい、もちろんです。どの部分が分かりにくかったですか？", "すみません、分かりにくかったですね。どこをもう一度説明しましょうか。"])
+    return [(u, b)]
+
+
+def sc_sleepy():
+    u = R(["眠い", "ねむいなあ", "あくびが止まらない", "今日は眠いです"])
+    b = R(["眠いときは、少し休憩をとるのがいいですよ。温かいお茶を飲むのもおすすめです。", "それは大変ですね。無理せず、少し仮眠をとってみてはいかがですか。"])
+    return [(u, b)]
+
+
+def sc_talk_more():
+    u = R(["何か話して", "雑談しよう", "おしゃべりしよう", "話し相手になって", "ちょっと話そうよ"])
+    b = R(["もちろんです。最近楽しかったことはありますか？", "いいですね。好きな食べ物や趣味など、何でも話しましょう。", "喜んで！今日はどんな一日でしたか？"])
+    return [(u, b)]
+
+
+TOPICS = [sc_howareyou, sc_whoareyou, sc_whatcanyoudo, sc_ai, sc_intro_name, sc_thanks_compliment, sc_weather, sc_weather_ask,
+          sc_datetime, sc_fav_food, sc_fav_generic, sc_like_x, sc_did_x, sc_recommend_food, sc_place, sc_travel, sc_fact, sc_capital,
+          sc_math, sc_joke, sc_cheer, sc_feeling, sc_study, sc_work, sc_recommend, sc_unknown_topic, sc_unknown_input,
+          sc_repeat_help, sc_sleepy, sc_talk_more]
+WEIGHTS = [3, 2, 2, 3, 3, 2, 3, 1, 1, 2, 3, 4, 2, 2, 3, 2, 4, 3, 3, 1, 2, 5, 3, 2, 2, 1, 1, 1, 1, 2]
+assert len(TOPICS) == len(WEIGHTS)
+
+
+def render(turns):
+    return "".join("ユーザー: {}\n{}: {}\n".format(u, BOT, b) for u, b in turns)
