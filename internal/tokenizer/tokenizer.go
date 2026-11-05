@@ -67,3 +67,15 @@ func (v *Vocab) Encode(s string) []int {
 	}
 	return out
 }
+
+// Decode converts ids back to text, skipping reserved tokens.
+func (v *Vocab) Decode(ids []int) string {
+	var b []byte
+	for _, id := range ids {
+		if id <= Unk || id >= len(v.Tokens) {
+			continue
+		}
+		b = append(b, v.Tokens[id]...)
+	}
+	return string(b)
+}
