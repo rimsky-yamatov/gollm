@@ -34,3 +34,16 @@ func TestMatMulBT(t *testing.T) {
 		}
 	}
 }
+
+func TestMatMulATAcc(t *testing.T) {
+	a := []float32{1, 2, 3, 4, 5, 6} // 3x2
+	b := []float32{1, 0, 0, 1, 1, 1} // 3x2
+	out := make([]float32, 4)
+	MatMulATAcc(out, a, b, 3, 2, 2)
+	want := []float32{6, 8, 8, 10}
+	for i := range want {
+		if out[i] != want[i] {
+			t.Fatalf("MatMulATAcc[%d] = %v, want %v", i, out[i], want[i])
+		}
+	}
+}
