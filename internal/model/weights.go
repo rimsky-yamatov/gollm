@@ -109,3 +109,5 @@ func (w *Weights) Params() []Param {
 	}
 	return append(ps, Param{"lnfg", w.LnfG, false}, Param{"lnfb", w.LnfB, false})
 }
+
+const magic = "GOLLM001"
