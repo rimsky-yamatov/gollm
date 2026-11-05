@@ -17,3 +17,5 @@ type golden struct {
 	LastArgmax     int         `json:"last_argmax"`
 	Greedy         [][]string  `json:"greedy"`
 }
+
+func root() string { return filepath.Join("..", "..") }
