@@ -192,3 +192,41 @@ func (t *Trainer) Loss(ids, tgt []int32, w []float32) float32 {
 	t.forward(ids)
 	return float32(t.lossAndDLogits(tgt, w))
 }
+
+// lossAndDLogits converts t.logits in place into ∂L/∂logits and returns L.
+func (t *Trainer) lossAndDLogits(tgt []int32, w []float32) float64 {
+	V := t.cfg.Vocab
+	var wsum float64
+	for _, x := range w {
+		wsum += float64(x)
+	}
+	if wsum < 1 {
+		wsum = 1
+	}
+	var loss float64
+	for n := 0; n < t.N; n++ {
+		row := t.logits[n*V : (n+1)*V]
+		mx := row[0]
+		for _, v := range row {
+			if v > mx {
+				mx = v
+			}
+		}
+		tl := float64(row[tgt[n]] - mx)
+		var sum float64
+		for i, v := range row {
+			e := math.Exp(float64(v - mx))
+			row[i] = float32(e)
+			sum += e
+		}
+		wn := float64(w[n])
+		loss += wn * (math.Log(sum) - tl)
+		inv := 1 / sum
+		sc := float32(wn / wsum)
+		for i := range row {
+			row[i] = float32(float64(row[i])*inv) * sc
+		}
+		row[tgt[n]] -= sc
+	}
+	return loss / wsum
+}
