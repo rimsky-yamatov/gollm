@@ -296,3 +296,38 @@ const (
 	weightDecay = 0.01
 	gradClip = 1.0
 )
+
+// Update applies one AdamW step with the gradients currently in t.G.
+// It returns the global gradient norm (before clipping).
+func (t *Trainer) Update(lr float64) float64 {
+	params, grads := t.W.Params(), t.G.Params()
+	ms, vs := t.M.Params(), t.V.Params()
+	var sq float64
+	for _, g := range grads {
+		for _, x := range g.Data {
+			sq += float64(x) * float64(x)
+		}
+	}
+	gn := math.Sqrt(sq)
+	clip := math.Min(1, gradClip/(gn+1e-6))
+	t.step++
+	bc1 := 1 - math.Pow(beta1, float64(t.step))
+	bc2 := 1 - math.Pow(beta2, float64(t.step))
+	for i := range params {
+		p, g, m, v := params[i], grads[i].Data, ms[i].Data, vs[i].Data
+		tensor.Parallel(len(p.Data), func(lo, hi int) {
+			for j := lo; j < hi; j++ {
+				gj := float64(g[j]) * clip
+				mj := beta1*float64(m[j]) + (1-beta1)*gj
+				vj := beta2*float64(v[j]) + (1-beta2)*gj*gj
+				m[j], v[j] = float32(mj), float32(vj)
+				upd := (mj / bc1) / (math.Sqrt(vj/bc2) + adamEps)
+				if p.Decay {
+					upd += weightDecay * float64(p.Data[j])
+				}
+				p.Data[j] -= float32(lr * upd)
+			}
+		})
+	}
+	return gn
+}
