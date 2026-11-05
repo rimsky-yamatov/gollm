@@ -57,3 +57,18 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+func loadAll(modelPath, vocabPath string) (*model.Weights, *tokenizer.Vocab, error) {
+	w, err := model.Load(modelPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, err := tokenizer.Load(vocabPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if v.Size() != w.Cfg.Vocab {
+		return nil, nil, fmt.Errorf("vocab size %d does not match model (%d)", v.Size(), w.Cfg.Vocab)
+	}
+	return w, v, nil
+}
