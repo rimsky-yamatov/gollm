@@ -102,3 +102,12 @@ C0 = math.sqrt(2.0 / math.pi)
 def gelu_fwd(u):
     t = np.tanh(C0 * (u + 0.044715 * u ** 3))
     return 0.5 * u * (1 + t), t
+
+
+def gelu_bwd(du, u, t):
+    return du * (0.5 * (1 + t) + 0.5 * u * (1 - t * t) * C0 * (1 + 3 * 0.044715 * u * u))
+
+
+def split_heads(x):  # B,T,D -> B,H,T,HD
+    B, Tn, _ = x.shape
+    return x.reshape(B, Tn, H, HD).transpose(0, 2, 1, 3)
