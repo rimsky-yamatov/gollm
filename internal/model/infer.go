@@ -40,3 +40,6 @@ func NewSession(w *Weights) *Session {
 	s.logits = mk(c.Vocab)
 	return s
 }
+
+// Pos is the number of tokens consumed so far.
+func (s *Session) Pos() int { return s.pos }
