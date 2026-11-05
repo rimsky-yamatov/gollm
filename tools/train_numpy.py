@@ -14,3 +14,5 @@ import numpy as np
 D, L, H, FF, T = 128, 3, 4, 512, 128
 HD = D // H
 PAD, EOS, UNK = 0, 1, 2
+BOT = "ノックス: "
+MAGIC = b"GOLLM001"
