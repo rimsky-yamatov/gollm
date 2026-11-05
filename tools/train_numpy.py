@@ -16,3 +16,5 @@ HD = D // H
 PAD, EOS, UNK = 0, 1, 2
 BOT = "ノックス: "
 MAGIC = b"GOLLM001"
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+BIN = os.path.join(ROOT, "model", "gollm.bin")
