@@ -23,3 +23,20 @@ type Session struct {
 	scores                    []float32
 	logits                    []float32
 }
+
+// NewSession allocates a decoding session for w.
+func NewSession(w *Weights) *Session {
+	c := w.Cfg
+	s := &Session{W: w}
+	for i := 0; i < c.Layers; i++ {
+		s.kc = append(s.kc, make([]float32, c.Ctx*c.Dim))
+		s.vc = append(s.vc, make([]float32, c.Ctx*c.Dim))
+	}
+	mk := func(n int) []float32 { return make([]float32, n) }
+	s.x, s.h, s.q, s.k, s.v = mk(c.Dim), mk(c.Dim), mk(c.Dim), mk(c.Dim), mk(c.Dim)
+	s.o, s.tmp, s.hf = mk(c.Dim), mk(c.Dim), mk(c.Dim)
+	s.u, s.g = mk(c.FF), mk(c.FF)
+	s.scores = mk(c.Ctx)
+	s.logits = mk(c.Vocab)
+	return s
+}
