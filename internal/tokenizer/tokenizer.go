@@ -8,3 +8,10 @@ import (
 	"os"
 	"sort"
 )
+
+// Reserved token ids.
+const (
+	Pad = 0
+	EOS = 1
+	Unk = 2
+)
