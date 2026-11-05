@@ -8,3 +8,11 @@ import (
 
 	"github.com/rimsky-yamatov/gollm/internal/tokenizer"
 )
+
+// Options controls decoding. Temp <= 0 selects greedy decoding.
+type Options struct {
+	Temp   float64
+	TopK   int
+	MaxLen int
+	Rng    *rand.Rand
+}
