@@ -287,3 +287,12 @@ func (t *Trainer) LossGrad(ids, tgt []int32, w []float32) float32 {
 	}
 	return float32(loss)
 }
+
+// Adam hyper-parameters.
+const (
+	beta1  = 0.9
+	beta2  = 0.99
+	adamEps = 1e-8
+	weightDecay = 0.01
+	gradClip = 1.0
+)
