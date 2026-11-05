@@ -111,3 +111,33 @@ func (w *Weights) Params() []Param {
 }
 
 const magic = "GOLLM001"
+
+// Save writes the weights in the gollm binary format.
+func Save(path string, w *Weights) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	bw := bufio.NewWriter(f)
+	if _, err := bw.WriteString(magic); err != nil {
+		f.Close()
+		return err
+	}
+	c := w.Cfg
+	hdr := []int32{int32(c.Vocab), int32(c.Dim), int32(c.Layers), int32(c.Heads), int32(c.FF), int32(c.Ctx)}
+	if err := binary.Write(bw, binary.LittleEndian, hdr); err != nil {
+		f.Close()
+		return err
+	}
+	for _, p := range w.Params() {
+		if err := binary.Write(bw, binary.LittleEndian, p.Data); err != nil {
+			f.Close()
+			return err
+		}
+	}
+	if err := bw.Flush(); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
