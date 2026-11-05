@@ -205,3 +205,5 @@ func LayerNormBwd(dx, dg, db, dy, xh, rstd, g []float32, rows, d int) {
 		}
 	}
 }
+
+const geluC = 0.7978845608028654 // sqrt(2/pi)
