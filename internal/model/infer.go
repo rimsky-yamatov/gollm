@@ -43,3 +43,6 @@ func NewSession(w *Weights) *Session {
 
 // Pos is the number of tokens consumed so far.
 func (s *Session) Pos() int { return s.pos }
+
+// Reset clears the context.
+func (s *Session) Reset() { s.pos = 0 }
