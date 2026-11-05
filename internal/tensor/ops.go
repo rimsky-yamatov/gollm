@@ -218,3 +218,11 @@ func GeluFwd(out, th, in []float32) {
 		out[i] = 0.5 * u * (1 + t)
 	}
 }
+
+// GeluBwd writes dst[i] = dout[i] * gelu'(in[i]) using the cached tanh values.
+func GeluBwd(dst, dout, in, th []float32) {
+	for i, u := range in {
+		t := th[i]
+		dst[i] = dout[i] * (0.5*(1+t) + 0.5*u*(1-t*t)*geluC*(1+3*0.044715*u*u))
+	}
+}
