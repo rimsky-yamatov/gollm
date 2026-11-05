@@ -148,3 +148,36 @@ func Softmax(row []float32) {
 }
 
 const lnEps = 1e-5
+
+// LayerNormFwd computes y = LN(x)*g + b for each row. xh and rstd are optional
+// caches (pass nil to skip) needed by LayerNormBwd.
+func LayerNormFwd(y, xh, rstd, x, g, b []float32, rows, d int) {
+	Parallel(rows, func(lo, hi int) {
+		for r := lo; r < hi; r++ {
+			xr := x[r*d : (r+1)*d]
+			var mu float64
+			for _, v := range xr {
+				mu += float64(v)
+			}
+			mu /= float64(d)
+			var vr float64
+			for _, v := range xr {
+				c := float64(v) - mu
+				vr += c * c
+			}
+			vr /= float64(d)
+			rs := float32(1.0 / math.Sqrt(vr+lnEps))
+			if rstd != nil {
+				rstd[r] = rs
+			}
+			m32 := float32(mu)
+			for i, v := range xr {
+				h := (v - m32) * rs
+				if xh != nil {
+					xh[r*d+i] = h
+				}
+				y[r*d+i] = h*g[i] + b[i]
+			}
+		}
+	})
+}
