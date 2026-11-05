@@ -230,3 +230,60 @@ func (t *Trainer) lossAndDLogits(tgt []int32, w []float32) float64 {
 	}
 	return loss / wsum
 }
+
+// LossGrad computes the loss for a batch and accumulates ∂L/∂θ into t.G
+// (t.G is zeroed first). ids and tgt have length B*T.
+func (t *Trainer) LossGrad(ids, tgt []int32, w []float32) float32 {
+	for _, p := range t.G.Params() {
+		tensor.Zero(p.Data)
+	}
+	t.forward(ids)
+	loss := t.lossAndDLogits(tgt, w)
+
+	c := t.cfg
+	d, ff, N, V := c.Dim, c.FF, t.N, c.Vocab
+	G := t.G
+	tensor.MatMulATAcc(G.E, t.logits, t.hf, N, V, d)
+	tensor.MatMul(t.dtmp, t.logits, t.W.E, N, V, d)
+	tensor.Zero(t.dx)
+	tensor.LayerNormBwd(t.dx, G.LnfG, G.LnfB, t.dtmp, t.xhf, t.rsf, t.W.LnfG, N, d)
+
+	for l := c.Layers - 1; l >= 0; l-- {
+		ly, gl, a := &t.W.L[l], &G.L[l], &t.ac[l]
+		// MLP
+		tensor.MatMulATAcc(gl.W2, a.gl, t.dx, N, ff, d)
+		tensor.ColSumAcc(gl.B2, t.dx, N, d)
+		tensor.MatMulBT(t.dgl, t.dx, ly.W2, N, d, ff)
+		tensor.GeluBwd(t.du, t.dgl, a.u, a.th)
+		tensor.MatMulATAcc(gl.W1, a.h2, t.du, N, d, ff)
+		tensor.ColSumAcc(gl.B1, t.du, N, ff)
+		tensor.MatMulBT(t.dh, t.du, ly.W1, N, ff, d)
+		tensor.LayerNormBwd(t.dx, gl.Ln2G, gl.Ln2B, t.dh, a.xh2, a.rs2, ly.Ln2G, N, d)
+		// Attention
+		tensor.MatMulATAcc(gl.Wo, a.o, t.dx, N, d, d)
+		tensor.MatMulBT(t.dO, t.dx, ly.Wo, N, d, d)
+		tensor.Zero(t.dq)
+		tensor.Zero(t.dk)
+		tensor.Zero(t.dv)
+		t.attnBwd(a)
+		tensor.MatMulATAcc(gl.Wq, a.h1, t.dq, N, d, d)
+		tensor.MatMulATAcc(gl.Wk, a.h1, t.dk, N, d, d)
+		tensor.MatMulATAcc(gl.Wv, a.h1, t.dv, N, d, d)
+		tensor.MatMulBT(t.dh, t.dq, ly.Wq, N, d, d)
+		tensor.MatMulBT(t.dtmp, t.dk, ly.Wk, N, d, d)
+		tensor.AddInPlace(t.dh, t.dtmp)
+		tensor.MatMulBT(t.dtmp, t.dv, ly.Wv, N, d, d)
+		tensor.AddInPlace(t.dh, t.dtmp)
+		tensor.LayerNormBwd(t.dx, gl.Ln1G, gl.Ln1B, t.dh, a.xh1, a.rs1, ly.Ln1G, N, d)
+	}
+	for n := 0; n < N; n++ {
+		dxr := t.dx[n*d : (n+1)*d]
+		ge := G.E[int(t.ids[n])*d : (int(t.ids[n])+1)*d]
+		gp := G.P[(n%t.T)*d : (n%t.T+1)*d]
+		for i, v := range dxr {
+			ge[i] += v
+			gp[i] += v
+		}
+	}
+	return float32(loss)
+}
