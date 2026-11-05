@@ -56,3 +56,20 @@ func MatMul(out, a, b []float32, m, k, n int) {
 		}
 	})
 }
+
+// MatMulBT computes out[m*n] = a[m*k] · bᵀ where b is stored as [n*k].
+func MatMulBT(out, a, b []float32, m, k, n int) {
+	Parallel(m, func(lo, hi int) {
+		for i := lo; i < hi; i++ {
+			ar := a[i*k : (i+1)*k]
+			for j := 0; j < n; j++ {
+				br := b[j*k : (j+1)*k]
+				var s float32
+				for p, av := range ar {
+					s += av * br[p]
+				}
+				out[i*n+j] = s
+			}
+		}
+	})
+}
