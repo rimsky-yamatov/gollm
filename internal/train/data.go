@@ -20,3 +20,30 @@ const (
 	UserPrefix = "ユーザー: "
 	BotTag     = "ノックス: "
 )
+
+// LoadConversations reads every *.txt file in dir. Conversations are separated
+// by blank lines and each one is normalised to end with exactly one "\n".
+func LoadConversations(dir string) ([]string, error) {
+	files, err := filepath.Glob(filepath.Join(dir, "*.txt"))
+	if err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no *.txt files in %s", dir)
+	}
+	sort.Strings(files)
+	var convs []string
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range strings.Split(string(b), "\n\n") {
+			c = strings.Trim(c, "\n")
+			if c != "" {
+				convs = append(convs, c+"\n")
+			}
+		}
+	}
+	return convs, nil
+}
