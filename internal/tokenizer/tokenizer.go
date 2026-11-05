@@ -15,3 +15,9 @@ const (
 	EOS = 1
 	Unk = 2
 )
+
+// Vocab maps between code points (as strings) and ids.
+type Vocab struct {
+	Tokens []string
+	index  map[string]int
+}
