@@ -30,3 +30,30 @@ const usage = `gollm - 日本語で会話できる小さな言語モデル (Go�
   gollm train [-data DIR] [-steps 4000] [-batch 16] [-lr 0.003] [-resume]
   gollm info  [-model PATH]
 `
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Print(usage)
+		os.Exit(2)
+	}
+	var err error
+	switch os.Args[1] {
+	case "chat":
+		err = runChat(os.Args[2:], false)
+	case "gen":
+		err = runChat(os.Args[2:], true)
+	case "train":
+		err = runTrain(os.Args[2:])
+	case "info":
+		err = runInfo(os.Args[2:])
+	case "-h", "--help", "help":
+		fmt.Print(usage)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", os.Args[1], usage)
+		os.Exit(2)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+}
