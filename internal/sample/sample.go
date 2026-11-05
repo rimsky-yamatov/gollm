@@ -16,3 +16,6 @@ type Options struct {
 	MaxLen int
 	Rng    *rand.Rand
 }
+
+// Greedy returns deterministic decoding options.
+func Greedy(maxLen int) Options { return Options{Temp: 0, TopK: 1, MaxLen: maxLen} }
