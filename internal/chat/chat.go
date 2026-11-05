@@ -34,3 +34,6 @@ func New(w *model.Weights, v *tokenizer.Vocab, o sample.Options) *Chat {
 	}
 	return &Chat{Sess: model.NewSession(w), Voc: v, Opts: o}
 }
+
+// Reset forgets the conversation.
+func (c *Chat) Reset() { c.turns = nil }
