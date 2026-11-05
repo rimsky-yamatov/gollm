@@ -24,3 +24,11 @@ func TestBuildPromptDropsOldTurns(t *testing.T) {
 		t.Fatalf("prompt = %q", p)
 	}
 }
+
+func TestBuildPromptNoHistory(t *testing.T) {
+	v := tokenizer.Build([]string{"x"})
+	p := BuildPrompt(nil, "こんにちは", v, 128)
+	if p != "ユーザー: こんにちは\nノックス: " {
+		t.Fatalf("prompt = %q", p)
+	}
+}
