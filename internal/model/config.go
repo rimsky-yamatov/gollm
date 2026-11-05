@@ -34,3 +34,9 @@ func (c Config) Validate() error {
 	}
 	return nil
 }
+
+// NumParams returns the total parameter count.
+func (c Config) NumParams() int {
+	per := 4*c.Dim + 4*c.Dim*c.Dim + 2*c.Dim*c.FF + c.FF + c.Dim
+	return c.Vocab*c.Dim + c.Ctx*c.Dim + c.Layers*per + 2*c.Dim
+}
