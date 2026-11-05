@@ -25,3 +25,10 @@ func TestReservedIDs(t *testing.T) {
 		t.Fatal("first real token must have id 3")
 	}
 }
+
+func TestSortedByCodePoint(t *testing.T) {
+	v := Build([]string{"ba"})
+	if v.Token(3) != "a" || v.Token(4) != "b" {
+		t.Fatalf("tokens = %v", v.Tokens)
+	}
+}
