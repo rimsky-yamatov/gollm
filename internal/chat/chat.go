@@ -54,3 +54,7 @@ func BuildPrompt(turns []Turn, user string, v *tokenizer.Vocab, ctx int) string 
 		}
 	}
 }
+
+func (c *Chat) prompt(user string) string {
+	return BuildPrompt(c.turns, user, c.Voc, c.Sess.W.Cfg.Ctx)
+}
