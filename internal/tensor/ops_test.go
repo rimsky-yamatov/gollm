@@ -62,3 +62,18 @@ func TestSoftmaxSumsToOne(t *testing.T) {
 		t.Fatalf("softmax not monotone: %v", r)
 	}
 }
+
+func TestLayerNormZeroMeanUnitVar(t *testing.T) {
+	x := []float32{1, 2, 3, 4}
+	g := []float32{1, 1, 1, 1}
+	b := []float32{0, 0, 0, 0}
+	y := make([]float32, 4)
+	LayerNormFwd(y, nil, nil, x, g, b, 1, 4)
+	var mean float32
+	for _, v := range y {
+		mean += v
+	}
+	if !approx(mean/4, 0, 1e-5) {
+		t.Fatalf("mean = %v", mean/4)
+	}
+}
