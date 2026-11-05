@@ -30,3 +30,24 @@ func New(tokens []string) *Vocab {
 	}
 	return v
 }
+
+// Build creates a vocabulary from texts: the reserved tokens followed by every
+// distinct rune in ascending code point order.
+func Build(texts []string) *Vocab {
+	seen := map[rune]bool{}
+	for _, t := range texts {
+		for _, r := range t {
+			seen[r] = true
+		}
+	}
+	rs := make([]rune, 0, len(seen))
+	for r := range seen {
+		rs = append(rs, r)
+	}
+	sort.Slice(rs, func(i, j int) bool { return rs[i] < rs[j] })
+	toks := []string{"<pad>", "<eos>", "<unk>"}
+	for _, r := range rs {
+		toks = append(toks, string(r))
+	}
+	return New(toks)
+}
