@@ -128,3 +128,18 @@ func runChat(args []string, single bool) error {
 		fmt.Println("ノックス>", r)
 	}
 }
+
+func runTrain(args []string) error {
+	o := train.DefaultOptions()
+	fs := flag.NewFlagSet("train", flag.ExitOnError)
+	fs.StringVar(&o.DataDir, "data", o.DataDir, "corpus directory (*.txt)")
+	fs.StringVar(&o.OutModel, "out", o.OutModel, "output weights")
+	fs.StringVar(&o.OutVocab, "vocab", o.OutVocab, "output vocab")
+	fs.IntVar(&o.Steps, "steps", o.Steps, "training steps")
+	fs.IntVar(&o.Batch, "batch", o.Batch, "batch size")
+	fs.Float64Var(&o.LR, "lr", o.LR, "peak learning rate")
+	fs.Int64Var(&o.Seed, "seed", o.Seed, "random seed")
+	fs.BoolVar(&o.Resume, "resume", false, "continue from -out")
+	fs.Parse(args)
+	return train.Run(o)
+}
