@@ -37,3 +37,20 @@ func New(w *model.Weights, v *tokenizer.Vocab, o sample.Options) *Chat {
 
 // Reset forgets the conversation.
 func (c *Chat) Reset() { c.turns = nil }
+
+// BuildPrompt renders the history plus the new user line. The oldest turns are
+// dropped until the prompt leaves room for a reply inside the context window.
+func BuildPrompt(turns []Turn, user string, v *tokenizer.Vocab, ctx int) string {
+	budget := ctx - replyReserve
+	for start := 0; ; start++ {
+		var b strings.Builder
+		for _, t := range turns[start:] {
+			b.WriteString(userPrefix + t.User + "\n" + botTag + t.Bot + "\n")
+		}
+		b.WriteString(userPrefix + user + "\n" + botTag)
+		p := b.String()
+		if start >= len(turns) || len(v.Encode(p)) <= budget {
+			return p
+		}
+	}
+}
