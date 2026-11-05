@@ -13,3 +13,8 @@ type Config struct {
 	FF     int // hidden width of the MLP
 	Ctx    int // maximum context length (learned positions)
 }
+
+// Default returns the architecture of the bundled model for a vocab size.
+func Default(vocab int) Config {
+	return Config{Vocab: vocab, Dim: 128, Layers: 3, Heads: 4, FF: 512, Ctx: 128}
+}
