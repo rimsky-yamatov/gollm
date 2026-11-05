@@ -207,3 +207,14 @@ func LayerNormBwd(dx, dg, db, dy, xh, rstd, g []float32, rows, d int) {
 }
 
 const geluC = 0.7978845608028654 // sqrt(2/pi)
+
+// GeluFwd computes the tanh-approximated GELU. th (optional) caches tanh(...).
+func GeluFwd(out, th, in []float32) {
+	for i, u := range in {
+		t := float32(math.Tanh(float64(geluC * (u + 0.044715*u*u*u))))
+		if th != nil {
+			th[i] = t
+		}
+		out[i] = 0.5 * u * (1 + t)
+	}
+}
