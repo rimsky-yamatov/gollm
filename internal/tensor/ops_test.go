@@ -47,3 +47,18 @@ func TestMatMulATAcc(t *testing.T) {
 		}
 	}
 }
+
+func TestSoftmaxSumsToOne(t *testing.T) {
+	r := []float32{1, 2, 3, 4}
+	Softmax(r)
+	var s float32
+	for _, v := range r {
+		s += v
+	}
+	if !approx(s, 1, 1e-5) {
+		t.Fatalf("softmax sum = %v", s)
+	}
+	if !(r[3] > r[2] && r[2] > r[1]) {
+		t.Fatalf("softmax not monotone: %v", r)
+	}
+}
