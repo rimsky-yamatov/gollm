@@ -99,3 +99,10 @@ func AddInPlace(dst, src []float32) {
 		dst[i] += v
 	}
 }
+
+// Zero sets every element of a to 0.
+func Zero(a []float32) {
+	for i := range a {
+		a[i] = 0
+	}
+}
