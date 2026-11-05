@@ -69,3 +69,33 @@ func (c *Chat) Reply(user string) (string, error) {
 	c.turns = append(c.turns, Turn{user, out})
 	return out, nil
 }
+
+// Generate feeds prompt into a fresh session and decodes until a newline.
+func Generate(s *model.Session, v *tokenizer.Vocab, prompt string, o sample.Options) (string, error) {
+	ids := v.Encode(prompt)
+	ctx := s.W.Cfg.Ctx
+	if len(ids) > ctx-8 {
+		ids = ids[len(ids)-(ctx-8):]
+	}
+	s.Reset()
+	logits, err := s.Feed(ids)
+	if err != nil {
+		return "", err
+	}
+	var out []string
+	for i := 0; i < o.MaxLen; i++ {
+		id := sample.Pick(logits, o)
+		tok := v.Token(id)
+		if tok == "\n" {
+			break
+		}
+		out = append(out, tok)
+		if s.Pos() >= ctx {
+			break
+		}
+		if logits, err = s.Step(id); err != nil {
+			return "", err
+		}
+	}
+	return strings.Join(out, ""), nil
+}
