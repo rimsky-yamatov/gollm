@@ -1,0 +1,7 @@
+# training checkpoints / scratch
+tools/ckpt.npz
+*.npz
+__pycache__/
+*.log
+/gollm
+/bin/
