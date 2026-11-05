@@ -29,3 +29,10 @@ type Weights struct {
 	L          []Layer
 	LnfG, LnfB []float32
 }
+
+// Param is a named view onto one parameter tensor.
+type Param struct {
+	Name  string
+	Data  []float32
+	Decay bool // apply weight decay (2-D weight matrices except embeddings)
+}
