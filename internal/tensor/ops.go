@@ -92,3 +92,10 @@ func MatMulATAcc(out, a, b []float32, m, k, n int) {
 		}
 	})
 }
+
+// AddInPlace performs dst[i] += src[i].
+func AddInPlace(dst, src []float32) {
+	for i, v := range src {
+		dst[i] += v
+	}
+}
