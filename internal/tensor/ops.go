@@ -116,3 +116,13 @@ func AddBias(x, b []float32, rows, d int) {
 		}
 	}
 }
+
+// ColSumAcc accumulates the column sums of x[rows*d] into out[d].
+func ColSumAcc(out, x []float32, rows, d int) {
+	for r := 0; r < rows; r++ {
+		xr := x[r*d : (r+1)*d]
+		for i, v := range xr {
+			out[i] += v
+		}
+	}
+}
