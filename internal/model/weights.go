@@ -59,3 +59,35 @@ func Zeros(cfg Config) *Weights {
 	}
 	return w
 }
+
+// New creates freshly initialised weights (GPT-2 style, std 0.02).
+func New(cfg Config, rng *rand.Rand) *Weights {
+	w := Zeros(cfg)
+	norm := func(a []float32, std float64) {
+		for i := range a {
+			a[i] = float32(rng.NormFloat64() * std)
+		}
+	}
+	ones := func(a []float32) {
+		for i := range a {
+			a[i] = 1
+		}
+	}
+	const s = 0.02
+	resid := s / sqrt(float64(2*cfg.Layers))
+	norm(w.E, s)
+	norm(w.P, s)
+	ones(w.LnfG)
+	for i := range w.L {
+		l := &w.L[i]
+		ones(l.Ln1G)
+		ones(l.Ln2G)
+		norm(l.Wq, s)
+		norm(l.Wk, s)
+		norm(l.Wv, s)
+		norm(l.Wo, resid)
+		norm(l.W1, s)
+		norm(l.W2, resid)
+	}
+	return w
+}
